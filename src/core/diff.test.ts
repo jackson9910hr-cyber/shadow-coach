@@ -47,7 +47,7 @@ describe('alignWords', () => {
   it('covers every reference index exactly once, in order', () => {
     const ref = w('the lord is my shepherd i shall not want');
     const ops = alignWords(ref, w('lord is my shepard i shall want now'));
-    const indices = ops.flatMap((o) => (o.refIndex === undefined ? [] : [o.refIndex]));
+    const indices = ops.flatMap((o) => (o.op === 'ins' ? [] : [o.refIndex]));
     expect(indices).toEqual(ref.map((_, i) => i));
   });
 });
