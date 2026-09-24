@@ -1,0 +1,222 @@
+{
+  "id": "default-v1",
+  "title": "기본 세트 — 비즈니스 · 교회 · 일상",
+  "version": 1,
+  "license": "English sentences and all Korean translations: original, CC0. Bible verse English text: World English Bible (WEB), public domain.",
+  "sentences": [
+    {
+      "id": "biz-001",
+      "category": "business",
+      "text": "Could you share the updated delivery schedule by Friday?",
+      "ko": "금요일까지 수정된 납기 일정을 공유해 주시겠어요?",
+      "tags": ["schedule"]
+    },
+    {
+      "id": "biz-002",
+      "category": "business",
+      "text": "We need to confirm the inspection date with the supplier.",
+      "ko": "공급업체와 검사 날짜를 확정해야 합니다.",
+      "tags": ["supplier"]
+    },
+    {
+      "id": "biz-003",
+      "category": "business",
+      "text": "Let's go over the action items from yesterday's meeting.",
+      "ko": "어제 회의의 실행 항목을 검토해 봅시다.",
+      "tags": ["meeting"]
+    },
+    {
+      "id": "biz-004",
+      "category": "business",
+      "text": "I'm afraid the lead time is longer than we expected.",
+      "ko": "유감스럽게도 리드타임이 예상보다 깁니다.",
+      "tags": ["schedule"]
+    },
+    {
+      "id": "biz-005",
+      "category": "business",
+      "text": "Could we reschedule the call to tomorrow morning?",
+      "ko": "통화를 내일 아침으로 옮길 수 있을까요?",
+      "tags": ["meeting"]
+    },
+    {
+      "id": "biz-006",
+      "category": "business",
+      "text": "Please send me the revised quotation as soon as possible.",
+      "ko": "수정된 견적서를 가능한 한 빨리 보내 주세요.",
+      "tags": ["negotiation"]
+    },
+    {
+      "id": "biz-007",
+      "category": "business",
+      "text": "The welding procedure has been approved by the client.",
+      "ko": "용접 절차서가 고객사의 승인을 받았습니다.",
+      "tags": ["quality"]
+    },
+    {
+      "id": "biz-008",
+      "category": "business",
+      "text": "We should identify the root cause before taking any action.",
+      "ko": "조치를 취하기 전에 근본 원인을 파악해야 합니다.",
+      "tags": ["quality"]
+    },
+    {
+      "id": "biz-009",
+      "category": "business",
+      "text": "I'll follow up with the vendor and get back to you.",
+      "ko": "협력업체에 확인하고 다시 연락드리겠습니다.",
+      "tags": ["supplier"]
+    },
+    {
+      "id": "biz-010",
+      "category": "business",
+      "text": "Our main priority is to meet the delivery deadline.",
+      "ko": "우리의 최우선 과제는 납기를 맞추는 것입니다.",
+      "tags": ["schedule"]
+    },
+    {
+      "id": "biz-011",
+      "category": "business",
+      "text": "Could you clarify what you mean by that?",
+      "ko": "그게 무슨 뜻인지 명확히 설명해 주시겠어요?",
+      "tags": ["meeting"]
+    },
+    {
+      "id": "biz-012",
+      "category": "business",
+      "text": "Let me summarize the key points of our discussion.",
+      "ko": "논의의 핵심 사항을 요약하겠습니다.",
+      "tags": ["meeting"]
+    },
+    {
+      "id": "biz-013",
+      "category": "business",
+      "text": "We're behind schedule, so we need a recovery plan.",
+      "ko": "일정이 지연되고 있어서 만회 계획이 필요합니다.",
+      "tags": ["schedule"]
+    },
+    {
+      "id": "biz-014",
+      "category": "business",
+      "text": "I appreciate your quick response on this matter.",
+      "ko": "이 건에 대해 빠르게 답변해 주셔서 감사합니다.",
+      "tags": ["email"]
+    },
+    {
+      "id": "biz-015",
+      "category": "business",
+      "text": "Is there any room for negotiation on the price?",
+      "ko": "가격에 대해 협상의 여지가 있을까요?",
+      "tags": ["negotiation"]
+    },
+    {
+      "id": "chu-001",
+      "category": "church",
+      "text": "Welcome to our church. We're so glad you're here.",
+      "ko": "저희 교회에 오신 것을 환영합니다. 와 주셔서 정말 기쁩니다.",
+      "tags": ["greeting"]
+    },
+    {
+      "id": "chu-002",
+      "category": "church",
+      "text": "Let's open our Bibles and read together.",
+      "ko": "성경을 펴고 함께 읽겠습니다.",
+      "tags": ["worship"]
+    },
+    {
+      "id": "chu-003",
+      "category": "church",
+      "text": "Would you like to join our small group this week?",
+      "ko": "이번 주 소그룹 모임에 함께하시겠어요?",
+      "tags": ["fellowship"]
+    },
+    {
+      "id": "chu-004",
+      "category": "church",
+      "text": "Let's pray for one another.",
+      "ko": "서로를 위해 기도합시다.",
+      "tags": ["prayer"]
+    },
+    {
+      "id": "chu-005",
+      "category": "church",
+      "text": "I can do all things through Christ, who strengthens me.",
+      "ko": "나에게 힘을 주시는 그리스도 안에서 나는 모든 것을 할 수 있습니다.",
+      "tags": ["verse"],
+      "source": "Philippians 4:13 (WEB)"
+    },
+    {
+      "id": "chu-006",
+      "category": "church",
+      "text": "Rejoice always. Pray without ceasing.",
+      "ko": "항상 기뻐하십시오. 끊임없이 기도하십시오.",
+      "tags": ["verse"],
+      "source": "1 Thessalonians 5:16-17 (WEB)"
+    },
+    {
+      "id": "chu-007",
+      "category": "church",
+      "text": "We love him, because he first loved us.",
+      "ko": "우리가 그분을 사랑하는 것은 그분이 먼저 우리를 사랑하셨기 때문입니다.",
+      "tags": ["verse"],
+      "source": "1 John 4:19 (WEB)"
+    },
+    {
+      "id": "chu-008",
+      "category": "church",
+      "text": "Come to me, all you who labor and are heavily burdened, and I will give you rest.",
+      "ko": "수고하고 무거운 짐을 진 사람들은 모두 내게 오십시오. 내가 여러분을 쉬게 하겠습니다.",
+      "tags": ["verse"],
+      "source": "Matthew 11:28 (WEB)"
+    },
+    {
+      "id": "day-001",
+      "category": "daily",
+      "text": "How was your weekend?",
+      "ko": "주말 어떻게 보내셨어요?",
+      "tags": ["smalltalk"]
+    },
+    {
+      "id": "day-002",
+      "category": "daily",
+      "text": "I'm on my way. I'll be there in ten minutes.",
+      "ko": "가는 중이에요. 10분 후에 도착해요.",
+      "tags": ["commute"]
+    },
+    {
+      "id": "day-003",
+      "category": "daily",
+      "text": "Would you mind if I opened the window?",
+      "ko": "창문을 열어도 될까요?",
+      "tags": ["request"]
+    },
+    {
+      "id": "day-004",
+      "category": "daily",
+      "text": "It's been a long day, but I feel great.",
+      "ko": "긴 하루였지만 기분이 좋아요.",
+      "tags": ["smalltalk"]
+    },
+    {
+      "id": "day-005",
+      "category": "daily",
+      "text": "Thank you for being so patient with me.",
+      "ko": "저를 참을성 있게 기다려 주셔서 감사해요.",
+      "tags": ["gratitude"]
+    },
+    {
+      "id": "day-006",
+      "category": "daily",
+      "text": "What do you usually do in your free time?",
+      "ko": "여가 시간에 주로 뭐 하세요?",
+      "tags": ["smalltalk"]
+    },
+    {
+      "id": "day-007",
+      "category": "daily",
+      "text": "Let me know if there's anything I can do to help.",
+      "ko": "제가 도울 일이 있으면 알려 주세요.",
+      "tags": ["request"]
+    }
+  ]
+}
