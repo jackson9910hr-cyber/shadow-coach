@@ -3,7 +3,7 @@ import preact from '@preact/preset-vite';
 
 export default defineConfig({
   plugins: [preact()],
-  define: { __APP_VERSION__: JSON.stringify('test') },
+  define: { __APP_VERSION__: JSON.stringify('test'), __NATIVE_SHELL__: 'false' },
   test: {
     globals: true,
     environment: 'jsdom',

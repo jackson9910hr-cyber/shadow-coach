@@ -1,4 +1,9 @@
-import type { Recorder, RecorderSession, Recording } from '../adapters/recorder/types';
+import {
+  RecorderError,
+  type Recorder,
+  type RecorderSession,
+  type Recording,
+} from '../adapters/recorder/types';
 import type { RecognitionHandlers, SpeechRecognizer } from '../adapters/speech/types';
 import type { SpeakOptions, Tts, VoiceInfo } from '../adapters/tts/types';
 import type { Services } from '../state/services';
@@ -51,10 +56,7 @@ export function createFakeServices(
     recorder: {
       supported: recorder !== false,
       async start(): Promise<RecorderSession> {
-        if (recorder === 'deny') {
-          const { RecorderError } = await import('../adapters/recorder/types');
-          throw new RecorderError('denied');
-        }
+        if (recorder === 'deny') throw new RecorderError('denied');
         return {
           async stop() {
             const rec = { url: 'blob:fake', dispose: vi.fn() };

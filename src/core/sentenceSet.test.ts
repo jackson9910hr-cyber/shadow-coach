@@ -97,3 +97,58 @@ describe('bundled default set', () => {
     expect(verses.every((s) => s.source?.endsWith('(WEB)'))).toBe(true);
   });
 });
+
+describe('parseSentenceSet limits', () => {
+  it.each([
+    [{ ...valid, id: 'a/b' }, 'id must match [A-Za-z0-9_.-]{1,64}'],
+    [{ ...valid, id: 'x'.repeat(65) }, 'id must match [A-Za-z0-9_.-]{1,64}'],
+    [{ ...valid, title: 't'.repeat(121) }, 'title must be at most 120 characters'],
+  ])('rejects unsafe set ids and long titles (%#)', (input, message) => {
+    const r = parseSentenceSet(input);
+    expect(r.ok).toBe(false);
+    if (!r.ok) expect(r.errors).toContain(message);
+  });
+
+  it.each([
+    [
+      { id: 'b/c', text: 'x', category: 'daily' },
+      'sentences[0].id must match [A-Za-z0-9_.-]{1,64}',
+    ],
+    [
+      { id: 'x', text: 'x'.repeat(501), category: 'daily' },
+      'sentences[0].text must be at most 500 characters',
+    ],
+    [
+      { id: 'x', text: 'x', ko: 'k'.repeat(501), category: 'daily' },
+      'sentences[0].ko must be at most 500 characters',
+    ],
+    [
+      { id: 'x', text: 'x', category: 'daily', tags: Array(21).fill('t') },
+      'sentences[0].tags must have at most 20 items of up to 40 characters',
+    ],
+    [
+      { id: 'x', text: 'x', category: 'daily', tags: ['t'.repeat(41)] },
+      'sentences[0].tags must have at most 20 items of up to 40 characters',
+    ],
+  ])('rejects oversized or unsafe sentence fields (%#)', (sentence, message) => {
+    const r = parseSentenceSet({ ...valid, sentences: [sentence] });
+    expect(r.ok).toBe(false);
+    if (!r.ok) expect(r.errors).toContain(message);
+  });
+
+  it('rejects sets with more than 2000 sentences', () => {
+    const sentences = Array.from({ length: 2001 }, (_, i) => ({
+      id: `s${i}`,
+      text: 'Hi.',
+      category: 'daily',
+    }));
+    const r = parseSentenceSet({ ...valid, sentences });
+    expect(r).toEqual({ ok: false, errors: ['sentences must have at most 2000 items'] });
+  });
+
+  it('stops collecting errors after 20 messages', () => {
+    const sentences = Array.from({ length: 50 }, () => ({ id: '', text: '', category: 'x' }));
+    const r = parseSentenceSet({ ...valid, sentences });
+    expect(!r.ok && r.errors.length).toBeLessThanOrEqual(21);
+  });
+});

@@ -1,4 +1,4 @@
-import { defineConfig } from 'vite';
+import { defineConfig, type Plugin } from 'vite';
 import preact from '@preact/preset-vite';
 import { VitePWA } from 'vite-plugin-pwa';
 import { readFileSync } from 'node:fs';
@@ -7,19 +7,55 @@ const pkg = JSON.parse(readFileSync(new URL('./package.json', import.meta.url), 
   version: string;
 };
 
-// GitHub Pages serves the app from /<repo>/; override with BASE_PATH for other hosts
-// (Capacitor builds use BASE_PATH=./).
+// GitHub Pages serves the app from /<repo>/; override with BASE_PATH for other hosts.
+// Capacitor builds use BASE_PATH=./ — service workers don't run under capacitor://.
+const base = process.env.BASE_PATH ?? '/shadow-coach/';
+const nativeShell = base === './';
+
+const CSP = [
+  "default-src 'self'",
+  "script-src 'self'",
+  "style-src 'self'",
+  "img-src 'self' data: blob:",
+  "media-src 'self' blob:",
+  "connect-src 'self'",
+  "worker-src 'self'",
+  "manifest-src 'self'",
+  "object-src 'none'",
+  "base-uri 'self'",
+  "form-action 'none'",
+].join('; ');
+
+/** Adds the CSP only to production builds (the dev server injects inline styles). */
+function cspPlugin(): Plugin {
+  return {
+    name: 'shadow-coach-csp',
+    apply: 'build',
+    transformIndexHtml: () => [
+      {
+        tag: 'meta',
+        attrs: { 'http-equiv': 'Content-Security-Policy', content: CSP },
+        injectTo: 'head-prepend',
+      },
+    ],
+  };
+}
+
 export default defineConfig({
-  base: process.env.BASE_PATH ?? '/shadow-coach/',
-  define: { __APP_VERSION__: JSON.stringify(pkg.version) },
+  base,
+  define: {
+    __APP_VERSION__: JSON.stringify(pkg.version),
+    __NATIVE_SHELL__: JSON.stringify(nativeShell),
+  },
   build: { target: 'safari15' },
   plugins: [
     preact(),
+    cspPlugin(),
     VitePWA({
+      disable: nativeShell,
       // Ask before activating a new version so an in-progress practice session is never reloaded.
       registerType: 'prompt',
       injectRegister: false,
-      includeAssets: ['icons/icon.svg', 'icons/apple-touch-icon.png'],
       manifest: {
         id: './',
         name: 'Shadow Coach — 영어 섀도잉 코치',
@@ -49,6 +85,7 @@ export default defineConfig({
         // App shell + bundled default sentence set are precached (cache-first, versioned).
         globPatterns: ['**/*.{js,css,html,svg,png,webmanifest}'],
         navigateFallback: 'index.html',
+        navigateFallbackDenylist: [/privacy\.html$/],
         cleanupOutdatedCaches: true,
         // No runtime caching: the app makes no network requests besides its own assets.
         runtimeCaching: [],

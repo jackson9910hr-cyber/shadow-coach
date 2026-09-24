@@ -32,3 +32,9 @@ describe('sanitizeSettings', () => {
     expect(sanitizeSettings({ newPerDay: 2.5 }).newPerDay).toBe(DEFAULT_SETTINGS.newPerDay);
   });
 });
+
+describe('sanitizeSettings limits', () => {
+  it('drops overly long voice URIs', () => {
+    expect(sanitizeSettings({ voiceURI: 'v'.repeat(201) }).voiceURI).toBeUndefined();
+  });
+});

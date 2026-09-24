@@ -4,6 +4,7 @@ import { createBackup, parseBackup, type Backup } from '../core/backup';
 import { toDateKey, type DateKey } from '../core/date';
 import { buildQueue } from '../core/queue';
 import {
+  DEFAULT_SET_ID,
   parseSentenceSet,
   type Category,
   type Sentence,
@@ -39,13 +40,14 @@ export interface RecordInput {
   sentenceId: string;
   accuracy: number;
   segment?: boolean;
-  transcript?: string;
 }
 
 export interface RecordOutcome {
   /** True when this attempt updated the SM-2 schedule (first whole attempt of the day). */
   graded: boolean;
   card: Card | null;
+  /** Resolves when the attempt is persisted (UI does not need to wait for it). */
+  saved: Promise<void>;
 }
 
 export type ImportResult = { ok: true; message: string } | { ok: false; message: string };
@@ -72,7 +74,6 @@ export function createStore(initialRepo: Repository, clock: () => Date = () => n
       category,
     });
   }
-  const dueCount = computed(() => queueFor('all').length);
 
   async function safely(op: () => Promise<void>) {
     try {
@@ -103,7 +104,8 @@ export function createStore(initialRepo: Repository, clock: () => Date = () => n
     today.value = toDateKey(clock());
   }
 
-  async function recordAttempt(input: RecordInput): Promise<RecordOutcome> {
+  /** Updates state immediately and persists in the background (one transaction). */
+  function recordAttempt(input: RecordInput): RecordOutcome {
     refreshToday();
     const date = today.value;
     const attempt: StoredAttempt = {
@@ -113,20 +115,24 @@ export function createStore(initialRepo: Repository, clock: () => Date = () => n
       createdAt: clock().getTime(),
     };
     if (input.segment) attempt.segment = true;
-    if (input.transcript !== undefined) attempt.transcript = input.transcript;
-    attempts.value = [...attempts.value, attempt];
-    await safely(() => repo.addAttempt(attempt));
 
-    if (input.segment) return { graded: false, card: cards.value[input.sentenceId] ?? null };
-
-    const current = cards.value[input.sentenceId] ?? newCard(input.sentenceId, date);
-    const graded = current.lastReviewed !== date;
-    const next = graded
-      ? review(current, qualityFromAccuracy(input.accuracy), date, input.accuracy)
-      : { ...current, lastAccuracy: input.accuracy };
-    cards.value = { ...cards.value, [next.sentenceId]: next };
-    await safely(() => repo.putCard(next));
-    return { graded, card: next };
+    let graded = false;
+    let card: Card | null = cards.value[input.sentenceId] ?? null;
+    let changed: Card | null = null;
+    if (!input.segment) {
+      const current = card ?? newCard(input.sentenceId, date);
+      graded = current.lastReviewed !== date;
+      changed = graded
+        ? review(current, qualityFromAccuracy(input.accuracy), date, input.accuracy)
+        : { ...current, lastAccuracy: input.accuracy };
+      card = changed;
+    }
+    batch(() => {
+      attempts.value = [...attempts.value, attempt];
+      if (changed) cards.value = { ...cards.value, [changed.sentenceId]: changed };
+    });
+    const saved = safely(() => repo.record(attempt, changed));
+    return { graded, card, saved };
   }
 
   async function updateSettings(patch: Partial<Settings>) {
@@ -138,7 +144,7 @@ export function createStore(initialRepo: Repository, clock: () => Date = () => n
   async function importSet(json: string): Promise<ImportResult> {
     const r = parseSentenceSet(json);
     if (!r.ok) return { ok: false, message: `세트 형식 오류: ${r.errors.slice(0, 3).join('; ')}` };
-    if (r.set.id === DEFAULT_SET.id) {
+    if (r.set.id === DEFAULT_SET_ID) {
       return { ok: false, message: '기본 세트와 같은 id는 사용할 수 없습니다.' };
     }
     userSets.value = [...userSets.value.filter((s) => s.id !== r.set.id), r.set];
@@ -213,7 +219,6 @@ export function createStore(initialRepo: Repository, clock: () => Date = () => n
     attempts,
     sentences,
     stats,
-    dueCount,
     init,
     refreshToday,
     queueFor,

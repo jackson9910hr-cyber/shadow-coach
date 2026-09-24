@@ -29,7 +29,8 @@ npm run format       # Prettier
 - 음성인식은 `window.SpeechRecognition ?? window.webkitSpeechRecognition` 기능 감지. 없거나 오프라인이면 자가채점 모드로 폴백.
 - `continuous = false`, 문장 단위 짧은 인식.
 - 인식/녹음 종료 시 `MediaStreamTrack.stop()`으로 마이크 해제 후 TTS 재생.
-- 음성 원본(오디오 Blob)은 저장·전송하지 않는다. 저장은 텍스트 결과와 점수만.
+- 음성 원본(오디오 Blob)과 인식된 텍스트는 저장·전송하지 않는다. 저장은 점수·날짜·복습 일정만.
+- 앱 백그라운드 전환 시 인식·녹음을 중단한다(`practice.interrupt()`).
 
 ## 코드 규칙
 
@@ -49,4 +50,5 @@ npm run format       # Prettier
 
 - 각 Stage 끝에서 멈추고 사용자 승인을 받는다.
 - 불확실하면 추측하지 말고 질문한다.
-- 참고 문서: `docs/stage0-requirements.md`(요구사항·리스크·데이터 모델)
+- 참고 문서: `docs/stage0-requirements.md`(요구사항·리스크·데이터 모델), `docs/review-stage4.md`(리뷰 이슈), `docs/ios.md`(Capacitor 전환)
+- 가져오는 JSON(세트·백업)은 `core/`의 검증기를 반드시 거친다. id는 `[A-Za-z0-9_.-]{1,64}`.

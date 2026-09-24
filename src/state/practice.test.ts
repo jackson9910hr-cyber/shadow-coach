@@ -189,3 +189,43 @@ describe('practice session (self-grading)', () => {
     await b.practice.stopSpeaking(); // no-op outside recording
   });
 });
+
+describe('practice interruptions', () => {
+  it('aborts listening when the app goes to the background', async () => {
+    const { practice, services } = await setup();
+    practice.startSpeaking();
+    practice.interrupt();
+    expect(practice.phase.value).toBe('ready');
+    services.recognition?.onFinal(['late result']);
+    expect(practice.result.value).not.toBeNull(); // controller still alive: late results are scored
+  });
+
+  it('discards an in-progress recording when interrupted', async () => {
+    const { practice, services } = await setup({ recognition: false });
+    practice.startSpeaking();
+    practice.interrupt();
+    await flush();
+    expect(practice.phase.value).toBe('ready');
+    expect(services.recordings[0]?.dispose).toHaveBeenCalled();
+  });
+
+  it('ignores results after dispose and disposes a late recording', async () => {
+    const { practice, services } = await setup({ recognition: false });
+    practice.startSpeaking();
+    const stopping = practice.stopSpeaking();
+    practice.dispose();
+    await stopping;
+    expect(practice.recording.value).toBeNull();
+    expect(
+      services.recordings.every(
+        (r) => (r.dispose as ReturnType<typeof vi.fn>).mock.calls.length > 0,
+      ),
+    ).toBe(true);
+
+    const other = await setup();
+    other.practice.startSpeaking();
+    other.practice.dispose();
+    other.services.recognition?.onFinal(['could you']);
+    expect(other.practice.result.value).toBeNull();
+  });
+});

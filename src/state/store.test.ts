@@ -29,7 +29,7 @@ describe('store', () => {
 
   it('builds today queue limited by new sentences per day and category', async () => {
     const { store } = await setup();
-    expect(store.dueCount.value).toBe(10);
+    expect(store.queueFor('all')).toHaveLength(10);
     expect(store.queueFor('church').map((s) => s.localId)).toEqual([
       'chu-001',
       'chu-002',
@@ -44,7 +44,7 @@ describe('store', () => {
 
   it('grades only the first whole attempt per day and persists it', async () => {
     const { store, repo } = await setup();
-    const first = await store.recordAttempt({ sentenceId: firstId, accuracy: 78, transcript: 'x' });
+    const first = store.recordAttempt({ sentenceId: firstId, accuracy: 78 });
     expect(first.graded).toBe(true);
     expect(first.card).toMatchObject({
       repetition: 1,
@@ -53,12 +53,13 @@ describe('store', () => {
       lastAccuracy: 78,
     });
 
-    const second = await store.recordAttempt({ sentenceId: firstId, accuracy: 100 });
+    const second = store.recordAttempt({ sentenceId: firstId, accuracy: 100 });
     expect(second.graded).toBe(false);
     expect(second.card).toMatchObject({ due: '2026-09-25', lastAccuracy: 100 });
 
-    const seg = await store.recordAttempt({ sentenceId: firstId, accuracy: 50, segment: true });
+    const seg = store.recordAttempt({ sentenceId: firstId, accuracy: 50, segment: true });
     expect(seg.graded).toBe(false);
+    await seg.saved;
 
     expect(store.stats.value).toEqual({
       sentences: 1,
@@ -66,16 +67,21 @@ describe('store', () => {
       averageAccuracy: 89,
       streak: 1,
     });
-    expect(store.dueCount.value).toBe(9); // 1 of 10 new used, and it is not due until tomorrow
+    expect(store.queueFor('all')).toHaveLength(9); // 1 of 10 new used; it is due tomorrow
     const snap = await repo.load();
     expect(snap.attempts).toHaveLength(3);
-    expect(snap.attempts[0]).toMatchObject({ transcript: 'x', date: '2026-09-24' });
+    expect(snap.attempts[0]).toEqual({
+      sentenceId: firstId,
+      date: '2026-09-24',
+      accuracy: 78,
+      createdAt: new Date('2026-09-24T08:00:00').getTime(),
+    });
     expect(snap.cards[0]?.lastAccuracy).toBe(100);
   });
 
   it('returns null card for a segment attempt on an unseen sentence', async () => {
     const { store } = await setup();
-    expect(await store.recordAttempt({ sentenceId: firstId, accuracy: 10, segment: true })).toEqual(
+    expect(store.recordAttempt({ sentenceId: firstId, accuracy: 10, segment: true })).toMatchObject(
       {
         graded: false,
         card: null,
@@ -118,12 +124,15 @@ describe('store', () => {
     expect(store.sentences.value).toHaveLength(30);
   });
 
-  it('exports a backup without transcripts and restores it into a fresh store', async () => {
+  it('exports a backup and restores it into a fresh store', async () => {
     const { store } = await setup();
-    await store.recordAttempt({ sentenceId: firstId, accuracy: 90, transcript: 'secret words' });
-    await store.recordAttempt({ sentenceId: firstId, accuracy: 40, segment: true });
+    store.recordAttempt({ sentenceId: firstId, accuracy: 90 });
+    store.recordAttempt({ sentenceId: firstId, accuracy: 40, segment: true });
     const backup = store.exportBackup();
-    expect(JSON.stringify(backup)).not.toContain('secret words');
+    expect(backup.attempts).toEqual([
+      { sentenceId: firstId, date: '2026-09-24', accuracy: 90 },
+      { sentenceId: firstId, date: '2026-09-24', accuracy: 40, segment: true },
+    ]);
 
     const { store: other } = await setup();
     const r = await other.importBackup(JSON.stringify(backup));
@@ -134,7 +143,7 @@ describe('store', () => {
 
   it('resets everything', async () => {
     const { store, repo } = await setup();
-    await store.recordAttempt({ sentenceId: firstId, accuracy: 90 });
+    await store.recordAttempt({ sentenceId: firstId, accuracy: 90 }).saved;
     await store.resetAll();
     expect(store.attempts.value).toEqual([]);
     expect(await repo.load()).toEqual({ cards: [], attempts: [], settings: null, sets: [] });
@@ -146,13 +155,13 @@ describe('store', () => {
     const { store } = await setup(undefined, broken);
     expect(store.storageError.value).toBe(true);
     expect(store.ready.value).toBe(true);
-    await store.recordAttempt({ sentenceId: firstId, accuracy: 90 });
+    await store.recordAttempt({ sentenceId: firstId, accuracy: 90 }).saved;
     expect(store.attempts.value).toHaveLength(1);
 
     const flaky = createMemoryRepository();
-    flaky.addAttempt = () => Promise.reject(new Error('quota'));
+    flaky.record = () => Promise.reject(new Error('quota'));
     const { store: s2 } = await setup(undefined, flaky);
-    await s2.recordAttempt({ sentenceId: firstId, accuracy: 90 });
+    await s2.recordAttempt({ sentenceId: firstId, accuracy: 90 }).saved;
     expect(s2.storageError.value).toBe(true);
   });
 });

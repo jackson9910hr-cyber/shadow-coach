@@ -8,11 +8,11 @@ export function createMemoryRepository(initial?: Partial<Snapshot>): Repository 
     async load() {
       return clone(data);
     },
-    async putCard(card) {
-      data.cards = [...data.cards.filter((c) => c.sentenceId !== card.sentenceId), clone(card)];
-    },
-    async addAttempt(attempt) {
+    async record(attempt, card) {
       data.attempts = [...data.attempts, clone(attempt)];
+      if (card) {
+        data.cards = [...data.cards.filter((c) => c.sentenceId !== card.sentenceId), clone(card)];
+      }
     },
     async putSettings(settings) {
       data.settings = clone(settings);

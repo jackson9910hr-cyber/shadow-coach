@@ -1,5 +1,5 @@
 import { isDateKey } from './date';
-import { parseSentenceSet, type SentenceSet } from './sentenceSet';
+import { DEFAULT_SET_ID, parseSentenceSet, type SentenceSet } from './sentenceSet';
 import { sanitizeSettings, type Settings } from './settings';
 import type { Card } from './sm2';
 import type { AttemptRecord } from './stats';
@@ -108,6 +108,9 @@ export function parseBackup(input: unknown): BackupResult {
     const r = parseSentenceSet(s);
     return r.ok ? r.set : null;
   });
-  if (!sets) return { ok: false, error: 'Invalid sentence sets' };
+  const setIds = new Set(sets?.map((s) => s.id));
+  if (!sets || setIds.size !== sets.length || setIds.has(DEFAULT_SET_ID)) {
+    return { ok: false, error: 'Invalid sentence sets' };
+  }
   return { ok: true, data: { cards, attempts, settings: sanitizeSettings(data.settings), sets } };
 }

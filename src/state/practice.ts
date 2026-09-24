@@ -6,7 +6,7 @@ import {
   type RetrySegment,
 } from '../core/accuracy';
 import type { RecognitionErrorCode, RecognitionSession } from '../adapters/speech/types';
-import { RecorderError, type RecorderSession, type Recording } from '../adapters/recorder/types';
+import type { RecorderSession, Recording } from '../adapters/recorder/types';
 import type { Card } from '../core/sm2';
 import type { Services } from './services';
 import type { PracticeSentence, Store } from './store';
@@ -72,6 +72,7 @@ export function createPractice(store: Store, services: Services, queue: Practice
   );
 
   let recognition: RecognitionSession | null = null;
+  let disposed = false;
   let recorderSession: Promise<RecorderSession | null> | null = null;
 
   function clearRecording() {
@@ -109,14 +110,15 @@ export function createPractice(store: Store, services: Services, queue: Practice
     playing.value = false;
   }
 
-  async function finish(score: AttemptScore, transcript: string | null) {
-    const sentence = current.value as PracticeSentence;
+  function finish(score: AttemptScore, transcript: string | null) {
+    const sentence = current.value;
+    if (!sentence || disposed) return;
     const segment = target.value.kind === 'segment';
-    const outcome = await store.recordAttempt({
+    // Transcripts are shown in this session only; the store keeps just the score.
+    const outcome = store.recordAttempt({
       sentenceId: sentence.id,
       accuracy: score.accuracy,
       segment,
-      ...(transcript !== null ? { transcript } : {}),
     });
     const r: Result = { score, transcript, graded: outcome.graded, card: outcome.card };
     batch(() => {
@@ -134,7 +136,7 @@ export function createPractice(store: Store, services: Services, queue: Practice
       },
       onFinal: (alternatives) => {
         const best = pickBestTranscript(targetText.value, alternatives);
-        void finish(best.score, best.transcript);
+        finish(best.score, best.transcript);
       },
       onError: (code) => {
         if (code === 'network') forceSelf.value = true;
@@ -155,8 +157,8 @@ export function createPractice(store: Store, services: Services, queue: Practice
       recorderSession = Promise.resolve(null);
       return;
     }
-    recorderSession = recorder.start().catch((e: unknown) => {
-      if (e instanceof RecorderError && phase.value === 'recording') {
+    recorderSession = recorder.start().catch(() => {
+      if (phase.value === 'recording') {
         batch(() => {
           error.value = ERROR_MESSAGES.recorder;
           phase.value = 'grading';
@@ -187,7 +189,9 @@ export function createPractice(store: Store, services: Services, queue: Practice
     const session = await recorderSession;
     recorderSession = null;
     const rec = session ? await session.stop() : null;
-    recording.value = rec;
+    // The learner may have left the screen while the recorder was finishing.
+    if (disposed || phase.value !== 'grading') rec?.dispose();
+    else recording.value = rec;
   }
 
   function toggleMark(displayIndex: number) {
@@ -197,9 +201,9 @@ export function createPractice(store: Store, services: Services, queue: Practice
     marks.value = next;
   }
 
-  async function submitSelfGrade() {
+  function submitSelfGrade() {
     if (phase.value !== 'grading') return;
-    await finish(scoreSelfGrade(targetText.value, [...marks.value]), null);
+    finish(scoreSelfGrade(targetText.value, [...marks.value]), null);
   }
 
   function practiceSegment(segment: RetrySegment) {
@@ -236,10 +240,27 @@ export function createPractice(store: Store, services: Services, queue: Practice
     });
   }
 
-  function dispose() {
+  /** Stops listening/recording without scoring (e.g. the app went to the background). */
+  function interrupt() {
     stopAudio();
+    if (phase.value === 'listening') {
+      recognition?.abort();
+      recognition = null;
+      phase.value = 'ready';
+    } else if (phase.value === 'recording') {
+      const pending = recorderSession;
+      recorderSession = null;
+      phase.value = 'ready';
+      void pending?.then((s) => s?.stop().then((r) => r?.dispose()));
+    }
+  }
+
+  function dispose() {
+    interrupt();
+    disposed = true;
     recognition?.abort();
     void recorderSession?.then((s) => s?.stop().then((r) => r?.dispose()));
+    recorderSession = null;
     clearRecording();
   }
 
@@ -269,6 +290,7 @@ export function createPractice(store: Store, services: Services, queue: Practice
     backToFull,
     retry,
     next,
+    interrupt,
     dispose,
   };
 }

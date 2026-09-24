@@ -98,3 +98,27 @@ describe('parseBackup optional fields', () => {
     expect(r.ok && r.data.sets).toEqual([]);
   });
 });
+
+describe('parseBackup set rules', () => {
+  const base = createBackup(
+    { cards: [], attempts: [], settings: DEFAULT_SETTINGS, sets: [] },
+    '2026-09-24T00:00:00.000Z',
+  );
+  const set = (id: string) => ({
+    id,
+    title: 'T',
+    version: 1,
+    sentences: [{ id: '1', text: 'Hi.', category: 'daily' }],
+  });
+
+  it('rejects the reserved default set id and duplicate set ids', () => {
+    expect(parseBackup({ ...base, sets: [set('default-v1')] })).toEqual({
+      ok: false,
+      error: 'Invalid sentence sets',
+    });
+    expect(parseBackup({ ...base, sets: [set('a'), set('a')] })).toEqual({
+      ok: false,
+      error: 'Invalid sentence sets',
+    });
+  });
+});

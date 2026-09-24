@@ -44,6 +44,6 @@ export function sanitizeSettings(input: unknown): Settings {
     out.newPerDay = raw.newPerDay as number;
   }
   if (GRADINGS.includes(raw.grading as Grading)) out.grading = raw.grading as Grading;
-  if (typeof raw.voiceURI === 'string') out.voiceURI = raw.voiceURI;
+  if (typeof raw.voiceURI === 'string' && raw.voiceURI.length <= 200) out.voiceURI = raw.voiceURI;
   return out;
 }

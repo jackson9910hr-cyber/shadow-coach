@@ -30,10 +30,8 @@ describe.each([
 
   it('persists cards (upsert), attempts, settings and sets', async () => {
     const repo = make();
-    await repo.putCard(card);
-    await repo.putCard({ ...card, interval: 6 });
-    await repo.addAttempt(attempt);
-    await repo.addAttempt({ ...attempt, accuracy: 90 });
+    await repo.record(attempt, card);
+    await repo.record({ ...attempt, accuracy: 90 }, { ...card, interval: 6 });
     await repo.putSettings({ ...DEFAULT_SETTINGS, rate: 0.7 });
     await repo.putSet(set);
     const snap = await repo.load();
@@ -49,7 +47,7 @@ describe.each([
     await repo.deleteSet('mine');
     expect((await repo.load()).sets).toEqual([]);
 
-    await repo.addAttempt(attempt);
+    await repo.record(attempt, null);
     await repo.replaceAll({ cards: [card], attempts: [], settings: DEFAULT_SETTINGS, sets: [set] });
     expect(await repo.load()).toEqual({
       cards: [card],
@@ -63,5 +61,37 @@ describe.each([
 
     await repo.clearAll();
     expect(await repo.load()).toEqual({ cards: [], attempts: [], settings: null, sets: [] });
+  });
+});
+
+describe('idb repository resilience', () => {
+  it('reopens the database and retries once when the connection was lost', async () => {
+    const repo = createIdbRepository(`test-reopen-${n++}`);
+    await repo.load();
+    // Simulate iOS closing the connection while the app was suspended.
+    const { openShadowDb } = await import('./idbRepository');
+    const db = await openShadowDb(`test-reopen-${n - 1}`);
+    db.close();
+    const original = IDBDatabase.prototype.transaction;
+    let calls = 0;
+    IDBDatabase.prototype.transaction = function (
+      this: IDBDatabase,
+      ...args: Parameters<IDBDatabase['transaction']>
+    ) {
+      calls++;
+      if (calls === 1) throw new DOMException('closed', 'InvalidStateError');
+      return original.apply(this, args);
+    } as IDBDatabase['transaction'];
+    try {
+      await repo.record(attempt, card);
+    } finally {
+      IDBDatabase.prototype.transaction = original;
+    }
+    expect((await repo.load()).cards).toEqual([card]);
+  });
+
+  it('rethrows unrelated errors', async () => {
+    const repo = createIdbRepository(`test-err-${n++}`);
+    await expect(repo.putSet({ ...set, id: undefined as unknown as string })).rejects.toBeTruthy();
   });
 });

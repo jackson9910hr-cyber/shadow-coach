@@ -26,16 +26,22 @@ export function createWebRecorder(): Recorder {
           name === 'NotAllowedError' ? 'denied' : name === 'NotFoundError' ? 'no-mic' : 'unknown',
         );
       }
-      const mimeType = pickMime();
-      const recorder = new MediaRecorder(stream, mimeType ? { mimeType } : undefined);
-      const chunks: Blob[] = [];
-      recorder.ondataavailable = (e) => {
-        if (e.data.size > 0) chunks.push(e.data);
-      };
-      recorder.start();
-
       // Release the mic so iOS switches the audio route back to the speaker for TTS.
       const release = () => stream.getTracks().forEach((t) => t.stop());
+      const chunks: Blob[] = [];
+      let recorder: MediaRecorder;
+      try {
+        const mimeType = pickMime();
+        recorder = new MediaRecorder(stream, mimeType ? { mimeType } : undefined);
+        recorder.ondataavailable = (e) => {
+          if (e.data.size > 0) chunks.push(e.data);
+        };
+        recorder.start();
+      } catch {
+        // Never leave the microphone on after a failure (docs/review-stage4.md S1).
+        release();
+        throw new RecorderError('unknown');
+      }
 
       return {
         stop: () =>

@@ -95,7 +95,7 @@ export function createNativeRecognizer(): SpeechRecognizer {
 import { Capacitor } from '@capacitor/core';
 const native = Capacitor.isNativePlatform();
 recognizer: native ? createNativeRecognizer() : createWebRecognizer(),
-// Service Worker 등록도 native에서는 건너뜀 (이미 isNativeShell() 가드가 있음)
+// Service Worker: BASE_PATH=./ 빌드는 __NATIVE_SHELL__=true 로 PWA 플러그인과 등록을 모두 끔
 ```
 
 ## 4. Info.plist (필수 — 누락 시 크래시/리젝)
@@ -130,7 +130,7 @@ try? AVAudioSession.sharedInstance().setCategory(.playAndRecord, mode: .spokenAu
 
 ### 개인정보
 
-- [ ] **개인정보처리방침 URL** (필수) — GitHub Pages에 `privacy.html` 추가 권장
+- [ ] **개인정보처리방침 URL** (필수) — `https://jackson9910hr-cyber.github.io/shadow-coach/privacy.html` (`public/privacy.html`) ✅
 - [ ] App Privacy(영양 라벨): 앱이 개발자 서버로 수집하는 데이터 **없음**
   - ⚠️ 음성인식을 Apple 서버로 처리할 때의 표기는 Apple 가이드 확인. 온디바이스 인식을 강제하면 "Data Not Collected"가 명확해짐
 - [ ] 녹음·기록은 기기에만 저장된다는 안내가 앱 내(설정 › 개인정보)에 있음 ✅

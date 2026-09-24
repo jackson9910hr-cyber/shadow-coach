@@ -120,7 +120,15 @@ export function createWebRecognizer(
         handlers.onEnd();
       };
 
-      rec.start();
+      try {
+        rec.start();
+      } catch {
+        // e.g. InvalidStateError when a previous session is still shutting down.
+        clearTimeout(timer);
+        settled = true;
+        handlers.onError('unknown');
+        handlers.onEnd();
+      }
       return {
         stop: () => rec.stop(),
         abort: () => {

@@ -145,3 +145,17 @@ describe('createWebRecognizer', () => {
     vi.useRealTimers();
   });
 });
+
+describe('start failures', () => {
+  it('reports an error and ends when start() throws', () => {
+    class Throwing extends FakeRecognition {
+      override start() {
+        throw new DOMException('busy', 'InvalidStateError');
+      }
+    }
+    const h = handlers();
+    createWebRecognizer(Throwing).start('en-US', h);
+    expect(h.onError).toHaveBeenCalledWith('unknown');
+    expect(h.onEnd).toHaveBeenCalledTimes(1);
+  });
+});
