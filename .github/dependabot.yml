@@ -7,6 +7,19 @@ updates:
     groups:
       dev-dependencies:
         dependency-type: development
+        update-types: [minor, patch]
+    ignore:
+      # eslint-plugin-jsx-a11y supports ESLint <= 9 only; bump together when it adds v10 support.
+      - dependency-name: eslint
+        update-types: ['version-update:semver-major']
+      - dependency-name: '@eslint/js'
+        update-types: ['version-update:semver-major']
+      # typescript-eslint supports TypeScript < 6.1.
+      - dependency-name: typescript
+        update-types: ['version-update:semver-major']
+      # Match the Node.js major used in CI (22).
+      - dependency-name: '@types/node'
+        update-types: ['version-update:semver-major']
     open-pull-requests-limit: 5
   - package-ecosystem: github-actions
     directory: /
