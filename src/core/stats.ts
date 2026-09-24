@@ -47,3 +47,15 @@ export function todayStats(attempts: readonly AttemptRecord[], today: DateKey): 
     ),
   };
 }
+
+/** Sentences whose first-ever attempt happened today (i.e. introduced as new today). */
+export function countNewToday(attempts: readonly AttemptRecord[], today: DateKey): number {
+  const first = new Map<string, DateKey>();
+  for (const a of attempts) {
+    const prev = first.get(a.sentenceId);
+    if (prev === undefined || a.date < prev) first.set(a.sentenceId, a.date);
+  }
+  let count = 0;
+  for (const date of first.values()) if (date === today) count++;
+  return count;
+}

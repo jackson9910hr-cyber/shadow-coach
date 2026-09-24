@@ -64,7 +64,13 @@ describe('review', () => {
   it('resets repetitions and interval on a failing grade without changing EF', () => {
     const learned: Card = { ...base, ef: 2.2, interval: 20, repetition: 4, due: today };
     const r = review(learned, 2, today);
-    expect(r).toEqual({ ...learned, repetition: 0, interval: 1, due: '2026-09-25' });
+    expect(r).toEqual({
+      ...learned,
+      repetition: 0,
+      interval: 1,
+      due: '2026-09-25',
+      lastReviewed: today,
+    });
   });
 
   it('never lets EF drop below 1.3', () => {
@@ -95,5 +101,11 @@ describe('isDue', () => {
     expect(isDue(card, '2026-09-24')).toBe(false);
     expect(isDue(card, '2026-09-25')).toBe(true);
     expect(isDue(card, '2026-10-01')).toBe(true);
+  });
+});
+
+describe('lastReviewed', () => {
+  it('stamps the review date on the card', () => {
+    expect(review(newCard('s1', '2026-09-24'), 4, '2026-09-24').lastReviewed).toBe('2026-09-24');
   });
 });

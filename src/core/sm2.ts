@@ -16,6 +16,8 @@ export interface Card {
   repetition: number;
   due: DateKey;
   lastAccuracy?: number;
+  /** Date of the last graded review; used to grade only the first attempt per day. */
+  lastReviewed?: DateKey;
 }
 
 const MIN_EF = 1.3;
@@ -39,7 +41,7 @@ export function review(card: Card, quality: number, today: DateKey, accuracy?: n
   if (!Number.isInteger(quality) || quality < 0 || quality > 5) {
     throw new RangeError(`Quality must be an integer 0–5, got ${quality}`);
   }
-  const next: Card = { ...card };
+  const next: Card = { ...card, lastReviewed: today };
   if (accuracy !== undefined) next.lastAccuracy = accuracy;
 
   if (quality < 3) {

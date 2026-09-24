@@ -1,4 +1,4 @@
-import { streakDays, todayStats, type AttemptRecord } from './stats';
+import { countNewToday, streakDays, todayStats, type AttemptRecord } from './stats';
 
 const a = (sentenceId: string, date: string, accuracy: number, segment = false): AttemptRecord => ({
   sentenceId,
@@ -71,5 +71,22 @@ describe('todayStats', () => {
       averageAccuracy: null,
       streak: 1,
     });
+  });
+});
+
+describe('countNewToday', () => {
+  it('counts sentences whose first ever attempt is today', () => {
+    expect(
+      countNewToday(
+        [
+          a('s1', '2026-09-23', 50),
+          a('s1', '2026-09-24', 60), // seen before
+          a('s2', '2026-09-24', 70),
+          a('s2', '2026-09-24', 80, true),
+          a('s3', '2026-09-24', 90, true),
+        ],
+        '2026-09-24',
+      ),
+    ).toBe(2);
   });
 });

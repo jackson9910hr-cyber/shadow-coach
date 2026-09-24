@@ -1,4 +1,4 @@
-import { accuracyOf, scoreAttempt } from './accuracy';
+import { accuracyOf, pickBestTranscript, scoreAttempt, scoreSelfGrade } from './accuracy';
 
 describe('accuracyOf', () => {
   it('is matches / reference words, rounded to an integer percent', () => {
@@ -58,5 +58,39 @@ describe('scoreAttempt', () => {
 
   it('scores an empty transcript as 0', () => {
     expect(scoreAttempt('Good morning', '').accuracy).toBe(0);
+  });
+});
+
+describe('scoreSelfGrade', () => {
+  it('scores by the display words the learner marked wrong', () => {
+    const r = scoreSelfGrade("I'm ready to go now.", [0], { context: 0, mergeGap: 0 });
+    // "I'm" expands to 2 of 6 tokens -> 4/6
+    expect(r.accuracy).toBe(67);
+    expect(r.wrongDisplayIndices).toEqual([0]);
+    expect(r.segments).toEqual([{ start: 0, end: 0, text: "I'm" }]);
+  });
+
+  it('gives 100 when nothing is marked and ignores out-of-range indices', () => {
+    const r = scoreSelfGrade('Pray without ceasing.', [7, -1]);
+    expect(r.accuracy).toBe(100);
+    expect(r.wrongDisplayIndices).toEqual([]);
+  });
+});
+
+describe('pickBestTranscript', () => {
+  it('chooses the alternative with the highest accuracy', () => {
+    const r = pickBestTranscript('We love him', ['we loved him', 'we love him', 'wee love hymn']);
+    expect(r.transcript).toBe('we love him');
+    expect(r.score.accuracy).toBe(100);
+  });
+
+  it('keeps the first alternative on ties', () => {
+    expect(pickBestTranscript('a b', ['a x', 'a y']).transcript).toBe('a x');
+  });
+
+  it('handles an empty alternative list', () => {
+    const r = pickBestTranscript('Hello', []);
+    expect(r.transcript).toBe('');
+    expect(r.score.accuracy).toBe(0);
   });
 });

@@ -1,5 +1,5 @@
 import { parseSentenceSet } from './sentenceSet';
-import defaultSet from '../../public/sets/default.json';
+import defaultSet from '../data/default-set.json';
 
 const valid = {
   id: 'set-1',

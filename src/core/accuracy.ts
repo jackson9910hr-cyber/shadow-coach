@@ -1,5 +1,5 @@
 import { alignWords, errorSegments, type DiffOp, type SegmentOptions } from './diff';
-import { splitDisplayWords, tokenize } from './normalize';
+import { splitDisplayWords, tokenize, type Token } from './normalize';
 
 export interface RetrySegment {
   /** Inclusive display-word range. */
@@ -32,18 +32,14 @@ export function accuracyOf(ops: readonly DiffOp[]): number {
 
 const EDGE_PUNCTUATION = /^[\p{P}\p{S}]+|[\p{P}\p{S}]+$/gu;
 
-export function scoreAttempt(
+function buildScore(
   reference: string,
-  transcript: string,
+  ops: DiffOp[],
+  refTokens: Token[],
   segmentOptions?: SegmentOptions,
 ): AttemptScore {
-  const refTokens = tokenize(reference);
-  const ops = alignWords(
-    refTokens.map((t) => t.word),
-    tokenize(transcript).map((t) => t.word),
-  );
   const displayWords = splitDisplayWords(reference);
-  const sourceOf = (tokenIndex: number) => (refTokens[tokenIndex] as { source: number }).source;
+  const sourceOf = (tokenIndex: number) => (refTokens[tokenIndex] as Token).source;
 
   const wrong = new Set<number>();
   for (const o of ops) {
@@ -67,4 +63,47 @@ export function scoreAttempt(
     wrongDisplayIndices: [...wrong].sort((a, b) => a - b),
     segments,
   };
+}
+
+/** Scores a recognizer transcript against the reference sentence. */
+export function scoreAttempt(
+  reference: string,
+  transcript: string,
+  segmentOptions?: SegmentOptions,
+): AttemptScore {
+  const refTokens = tokenize(reference);
+  const ops = alignWords(
+    refTokens.map((t) => t.word),
+    tokenize(transcript).map((t) => t.word),
+  );
+  return buildScore(reference, ops, refTokens, segmentOptions);
+}
+
+/** Scores a self-graded attempt: every token of a marked display word counts as missed. */
+export function scoreSelfGrade(
+  reference: string,
+  wrongDisplayIndices: readonly number[],
+  segmentOptions?: SegmentOptions,
+): AttemptScore {
+  const wrong = new Set(wrongDisplayIndices);
+  const refTokens = tokenize(reference);
+  const ops: DiffOp[] = refTokens.map((t, refIndex) =>
+    wrong.has(t.source)
+      ? { op: 'del', ref: t.word, refIndex }
+      : { op: 'match', ref: t.word, hyp: t.word, refIndex },
+  );
+  return buildScore(reference, ops, refTokens, segmentOptions);
+}
+
+/** Picks the recognizer alternative that best matches the reference (first wins on ties). */
+export function pickBestTranscript(
+  reference: string,
+  alternatives: readonly string[],
+): { transcript: string; score: AttemptScore } {
+  let best = { transcript: '', score: scoreAttempt(reference, '') };
+  alternatives.forEach((transcript, i) => {
+    const score = scoreAttempt(reference, transcript);
+    if (i === 0 || score.accuracy > best.score.accuracy) best = { transcript, score };
+  });
+  return best;
 }
