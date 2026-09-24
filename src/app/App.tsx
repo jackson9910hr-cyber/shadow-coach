@@ -1,5 +1,6 @@
 import { effect } from '@preact/signals';
 import { useEffect, useRef } from 'preact/hooks';
+import { UpdateBanner } from './components/UpdateBanner';
 import { AppContext, type AppContextValue } from './context';
 import { hrefFor, route, type Route } from './router';
 import { Home } from './screens/Home';
@@ -86,6 +87,7 @@ export function App({ value }: { value: AppContextValue }) {
           </div>
         </header>
         <main id="main" ref={mainRef} tabIndex={-1}>
+          <UpdateBanner />
           {store.storageError.value && (
             <p class="banner banner-warn" role="alert" style={{ marginBottom: 'var(--space-4)' }}>
               이 브라우저에서 저장소를 사용할 수 없어 기록이 저장되지 않습니다. (개인정보 보호

@@ -1,7 +1,9 @@
 import { render } from 'preact';
 import './styles/tokens.css';
 import './styles/base.css';
+import { registerSW } from 'virtual:pwa-register';
 import { App } from './app/App';
+import { needRefresh, offlineReady, setUpdater } from './app/pwa';
 import { createWebRecorder } from './adapters/recorder/webRecorder';
 import { createWebRecognizer } from './adapters/speech/webRecognizer';
 import { createIdbRepository } from './adapters/storage/idbRepository';
@@ -29,6 +31,19 @@ document.addEventListener('visibilitychange', () => {
 });
 
 void store.init();
+
+if ('serviceWorker' in navigator && import.meta.env.PROD) {
+  setUpdater(
+    registerSW({
+      onNeedRefresh: () => {
+        needRefresh.value = true;
+      },
+      onOfflineReady: () => {
+        offlineReady.value = true;
+      },
+    }),
+  );
+}
 
 const root = document.getElementById('app');
 if (root) render(<App value={{ store, services }} />, root);

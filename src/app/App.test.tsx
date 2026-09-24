@@ -183,3 +183,19 @@ describe('App', () => {
     await screen.findByText(/저장소를 사용할 수 없어/);
   });
 });
+
+describe('UpdateBanner', () => {
+  it('offers an update and an offline-ready notice', async () => {
+    const { needRefresh, offlineReady, setUpdater } = await import('./pwa');
+    const update = vi.fn(() => Promise.resolve());
+    setUpdater(update);
+    await renderApp();
+    needRefresh.value = true;
+    click(await screen.findByRole('button', { name: '업데이트' }));
+    expect(update).toHaveBeenCalledWith(true);
+    click(button('나중에'));
+    offlineReady.value = true;
+    click(await screen.findByRole('button', { name: '확인' }));
+    expect(screen.queryByText(/오프라인에서도/)).toBeNull();
+  });
+});
