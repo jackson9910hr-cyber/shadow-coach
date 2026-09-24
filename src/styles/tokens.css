@@ -1,0 +1,86 @@
+/* Design tokens. Components use only these variables (see CLAUDE.md). */
+:root {
+  color-scheme: light;
+  --bg: #f5f6f8;
+  --surface: #ffffff;
+  --surface-2: #eceef2;
+  --text: #15171c;
+  --text-muted: #555c69;
+  --border: #d5d9e0;
+  --accent: #2b55c8;
+  --accent-strong: #1f44a8;
+  --accent-contrast: #ffffff;
+  --accent-soft: #e5ecff;
+  --ok: #17753a;
+  --ok-bg: #e3f3e8;
+  --err: #b3261e;
+  --err-bg: #fdeceb;
+  --warn: #7a5000;
+  --warn-bg: #fff3d4;
+  --focus: #2b55c8;
+  --shadow: 0 1px 2px rgb(16 24 40 / 6%), 0 2px 8px rgb(16 24 40 / 6%);
+
+  --radius: 14px;
+  --radius-sm: 10px;
+  --space-1: 4px;
+  --space-2: 8px;
+  --space-3: 12px;
+  --space-4: 16px;
+  --space-5: 24px;
+  --space-6: 32px;
+  --tap: 48px;
+  --font:
+    -apple-system, BlinkMacSystemFont, 'SF Pro Text', 'Apple SD Gothic Neo', 'Noto Sans KR',
+    system-ui, sans-serif;
+  --text-sm: 0.875rem;
+  --text-md: 1rem;
+  --text-lg: 1.25rem;
+  --text-xl: 1.5rem;
+  --text-2xl: 2.25rem;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme='light']) {
+    color-scheme: dark;
+    --bg: #0e1014;
+    --surface: #171a20;
+    --surface-2: #222630;
+    --text: #eceef3;
+    --text-muted: #a6adba;
+    --border: #343a46;
+    --accent: #88a8ff;
+    --accent-strong: #a9c0ff;
+    --accent-contrast: #0b1020;
+    --accent-soft: #1d2744;
+    --ok: #6fd896;
+    --ok-bg: #12301e;
+    --err: #ff8f86;
+    --err-bg: #3b1714;
+    --warn: #f3c768;
+    --warn-bg: #33270f;
+    --focus: #a9c0ff;
+    --shadow: none;
+  }
+}
+
+:root[data-theme='dark'] {
+  color-scheme: dark;
+  --bg: #0e1014;
+  --surface: #171a20;
+  --surface-2: #222630;
+  --text: #eceef3;
+  --text-muted: #a6adba;
+  --border: #343a46;
+  --accent: #88a8ff;
+  --accent-strong: #a9c0ff;
+  --accent-contrast: #0b1020;
+  --accent-soft: #1d2744;
+  --ok: #6fd896;
+  --ok-bg: #12301e;
+  --err: #ff8f86;
+  --err-bg: #3b1714;
+  --warn: #f3c768;
+  --warn-bg: #33270f;
+  --focus: #a9c0ff;
+  --shadow: none;
+}
