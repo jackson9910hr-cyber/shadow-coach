@@ -13,6 +13,7 @@ export function UpdateBanner() {
           class="btn btn-ghost"
           onClick={() => {
             needRefresh.value = false;
+            document.getElementById('main')?.focus();
           }}
         >
           나중에
@@ -29,6 +30,7 @@ export function UpdateBanner() {
           class="btn btn-ghost"
           onClick={() => {
             offlineReady.value = false;
+            document.getElementById('main')?.focus();
           }}
         >
           확인

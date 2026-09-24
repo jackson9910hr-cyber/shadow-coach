@@ -5,6 +5,8 @@ import { useApp } from '../context';
 import { CATEGORY_LABEL, formatDue } from '../format';
 import { startPractice } from '../router';
 
+const PAGE = 50;
+
 const FILTERS: { value: Category | 'all'; label: string }[] = [
   { value: 'all', label: '전체' },
   ...(Object.keys(CATEGORY_LABEL) as Category[]).map((c) => ({
@@ -16,6 +18,7 @@ const FILTERS: { value: Category | 'all'; label: string }[] = [
 export function Library() {
   const { store } = useApp();
   const filter = useSignal<Category | 'all'>('all');
+  const limit = useSignal(PAGE);
   const today = store.today.value;
   const items = store.sentences.value.filter(
     (s) => filter.value === 'all' || s.category === filter.value,
@@ -30,18 +33,19 @@ export function Library() {
         value={filter.value}
         onChange={(v) => {
           filter.value = v;
+          limit.value = PAGE;
         }}
       />
       <p class="small muted" aria-live="polite">
         {items.length}문장
       </p>
-      <ul class="list">
-        {items.map((s) => {
+      <ul class="list" role="list">
+        {items.slice(0, limit.value).map((s) => {
           const card = store.cards.value[s.id];
           return (
             <li key={s.id} class="card list-item">
               <div>
-                <p lang="en">
+                <p lang="en" id={`text-${s.id}`}>
                   <strong>{s.text}</strong>
                 </p>
                 {s.ko && store.settings.value.showKo && <p class="small muted">{s.ko}</p>}
@@ -57,7 +61,7 @@ export function Library() {
               <button
                 type="button"
                 class="btn"
-                aria-label={`연습: ${s.text}`}
+                aria-describedby={`text-${s.id}`}
                 onClick={() => startPractice({ kind: 'single', sentenceId: s.id })}
               >
                 연습
@@ -66,6 +70,17 @@ export function Library() {
           );
         })}
       </ul>
+      {items.length > limit.value && (
+        <button
+          type="button"
+          class="btn btn-block"
+          onClick={() => {
+            limit.value += PAGE;
+          }}
+        >
+          더 보기 ({items.length - limit.value}문장 남음)
+        </button>
+      )}
     </div>
   );
 }

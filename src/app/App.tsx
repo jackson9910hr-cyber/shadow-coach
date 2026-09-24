@@ -8,6 +8,13 @@ import { Library } from './screens/Library';
 import { Practice } from './screens/Practice';
 import { Settings } from './screens/Settings';
 
+const TITLES: Record<Route, string> = {
+  home: '홈',
+  practice: '연습',
+  library: '문장 목록',
+  settings: '설정',
+};
+
 const NAV: { route: Route; label: string }[] = [
   { route: 'home', label: '홈' },
   { route: 'library', label: '문장' },
@@ -46,6 +53,7 @@ export function App({ value }: { value: AppContextValue }) {
 
   // Move focus to the new screen's heading so screen readers announce navigation.
   useEffect(() => {
+    document.title = `${TITLES[current]} – Shadow Coach`;
     if (firstRender.current) {
       firstRender.current = false;
       return;

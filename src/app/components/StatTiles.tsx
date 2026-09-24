@@ -9,7 +9,16 @@ export function StatTiles({ stats }: { stats: TodayStats }) {
       </div>
       <div class="stat">
         <dt>평균 정확도</dt>
-        <dd>{stats.averageAccuracy === null ? '–' : `${stats.averageAccuracy}%`}</dd>
+        <dd>
+          {stats.averageAccuracy === null ? (
+            <>
+              <span aria-hidden="true">–</span>
+              <span class="visually-hidden">기록 없음</span>
+            </>
+          ) : (
+            `${stats.averageAccuracy}%`
+          )}
+        </dd>
       </div>
       <div class="stat">
         <dt>연속 학습</dt>

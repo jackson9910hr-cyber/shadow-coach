@@ -1,6 +1,10 @@
+import { useId } from 'preact/hooks';
+
 export interface SegmentedOption<T extends string | number> {
   value: T;
   label: string;
+  /** Spoken label when the visible one reads poorly (e.g. "0.7×"). */
+  ariaLabel?: string;
 }
 
 interface Props<T extends string | number> {
@@ -20,15 +24,19 @@ export function Segmented<T extends string | number>({
   onChange,
   hideLabel = true,
 }: Props<T>) {
+  const labelId = useId();
   return (
-    <div role="group" aria-label={hideLabel ? label : undefined}>
-      {!hideLabel && <span class="field-label">{label}</span>}
+    <div role="group" aria-labelledby={labelId}>
+      <span id={labelId} class={hideLabel ? 'visually-hidden' : 'field-label'}>
+        {label}
+      </span>
       <div class="segmented">
         {options.map((o) => (
           <button
             key={String(o.value)}
             type="button"
             aria-pressed={o.value === value}
+            aria-label={o.ariaLabel}
             onClick={() => onChange(o.value)}
           >
             {o.label}

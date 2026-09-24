@@ -52,9 +52,9 @@ describe('App', () => {
     expect(button(/정지/)).toBeTruthy();
     click(button(/정지/));
 
-    click(button(/1\.0×/));
-    click(button(/0\.7×/));
-    expect(button(/0\.7×/).getAttribute('aria-pressed')).toBe('true');
+    click(button('1배속'));
+    click(button('0.7배속'));
+    expect(button('0.7배속').getAttribute('aria-pressed')).toBe('true');
 
     click(button(/따라 말하기/));
     expect(screen.getByText('듣는 중… 문장을 말해 주세요.')).toBeTruthy();
@@ -67,7 +67,7 @@ describe('App', () => {
     expect(screen.getByRole('status').textContent).toBe('정확도 78퍼센트, 틀린 단어 2개');
 
     click(button(/the updated delivery schedule by Friday/));
-    expect(screen.getByText('구간 연습')).toBeTruthy();
+    expect(screen.getByRole('heading', { level: 1, name: '구간 연습' })).toBeTruthy();
     click(button(/따라 말하기/));
     services.recognition?.onFinal(['the updated delivery schedule by friday']);
     await screen.findByText('100%');
@@ -130,7 +130,7 @@ describe('App', () => {
     expect(screen.getByText('30문장')).toBeTruthy();
     click(button('일상'));
     expect(screen.getByText('7문장')).toBeTruthy();
-    click(button('연습: How was your weekend?'));
+    click(screen.getByRole('button', { name: '연습', description: 'How was your weekend?' }));
     expect(screen.getByText('How was your weekend?')).toBeTruthy();
     expect(screen.getByText('1 / 1')).toBeTruthy();
   });

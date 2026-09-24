@@ -14,23 +14,36 @@ const SAMPLE_SET = `{
   ]
 }`;
 
-function download(filename: string, text: string) {
-  const url = URL.createObjectURL(new Blob([text], { type: 'application/json' }));
+/**
+ * Saves a JSON file. On iOS the share sheet ("파일에 저장") is the reliable path, especially in
+ * a home-screen app; otherwise fall back to a download link (docs/review-stage4.md S4).
+ */
+async function saveJson(filename: string, text: string) {
+  const file = new File([text], filename, { type: 'application/json' });
+  if (navigator.canShare?.({ files: [file] })) {
+    try {
+      await navigator.share({ files: [file], title: filename });
+      return;
+    } catch (e) {
+      if ((e as DOMException).name === 'AbortError') return;
+    }
+  }
+  const url = URL.createObjectURL(file);
   const a = document.createElement('a');
   a.href = url;
   a.download = filename;
   document.body.append(a);
   a.click();
   a.remove();
-  setTimeout(() => URL.revokeObjectURL(url), 1000);
+  // Keep the URL alive while Safari shows its download sheet.
+  setTimeout(() => URL.revokeObjectURL(url), 60_000);
 }
 
-async function readFile(e: Event): Promise<string | null> {
+async function readFile(e: Event, maxBytes: number): Promise<string | null> {
   const input = e.currentTarget as HTMLInputElement;
   const file = input.files?.[0];
   input.value = '';
-  if (!file) return null;
-  if (file.size > 5_000_000) return null;
+  if (!file || file.size > maxBytes) return null;
   return file.text();
 }
 
@@ -49,8 +62,13 @@ export function Settings() {
   );
 
   const report = (r: { ok: boolean; message: string }) => {
-    message.value = { ok: r.ok, text: r.message };
+    // Clear first so an identical message is announced again.
+    message.value = null;
+    setTimeout(() => {
+      message.value = { ok: r.ok, text: r.message };
+    }, 50);
   };
+  const focusHeading = () => document.querySelector<HTMLElement>('#s-sets')?.focus();
 
   return (
     <div class="stack">
@@ -181,7 +199,9 @@ export function Settings() {
       </section>
 
       <section class="card stack" aria-labelledby="s-sets">
-        <h2 id="s-sets">문장 세트</h2>
+        <h2 id="s-sets" tabIndex={-1}>
+          문장 세트
+        </h2>
         <ul class="list">
           <li class="list-item">
             <p>기본 세트 (30문장)</p>
@@ -199,6 +219,7 @@ export function Settings() {
                 onClick={() => {
                   if (confirm(`"${set.title}" 세트를 삭제할까요? 학습 기록은 유지됩니다.`)) {
                     void store.deleteSet(set.id);
+                    focusHeading();
                   }
                 }}
               >
@@ -213,7 +234,7 @@ export function Settings() {
             type="file"
             accept="application/json,.json"
             onChange={async (e) => {
-              const text = await readFile(e);
+              const text = await readFile(e, 5_000_000);
               if (text === null)
                 return report({ ok: false, message: '파일을 읽을 수 없습니다 (5MB 이하 JSON).' });
               report(await store.importSet(text));
@@ -221,7 +242,7 @@ export function Settings() {
           />
         </label>
         <details>
-          <summary class="small">세트 JSON 형식 보기</summary>
+          <summary class="summary small">세트 JSON 형식 보기</summary>
           <pre class="small" style={{ overflowX: 'auto' }}>
             {SAMPLE_SET}
           </pre>
@@ -239,9 +260,9 @@ export function Settings() {
           type="button"
           class="btn btn-block"
           onClick={() =>
-            download(
+            void saveJson(
               `shadow-coach-backup-${store.today.value}.json`,
-              JSON.stringify(store.exportBackup(), null, 2),
+              JSON.stringify(store.exportBackup()),
             )
           }
         >
@@ -253,8 +274,10 @@ export function Settings() {
             type="file"
             accept="application/json,.json"
             onChange={async (e) => {
-              const text = await readFile(e);
-              if (text === null) return report({ ok: false, message: '파일을 읽을 수 없습니다.' });
+              const text = await readFile(e, 20_000_000);
+              if (text === null) {
+                return report({ ok: false, message: '파일을 읽을 수 없습니다 (20MB 이하 JSON).' });
+              }
               if (!confirm('현재 학습 기록을 백업 파일 내용으로 바꿀까요?')) return;
               report(await store.importBackup(text));
             }}

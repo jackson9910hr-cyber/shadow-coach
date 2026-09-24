@@ -29,7 +29,10 @@ export function DiffView({ reference, score, selfGraded = false }: Props) {
   const wrong = new Set(score.wrongDisplayIndices);
   return (
     <>
-      <ol class="words" aria-label="단어별 결과">
+      <p class="visually-hidden" lang="en">
+        {reference}
+      </p>
+      <ol class="words" role="list" aria-label="단어별 결과" lang="en">
         {score.displayWords.map((word, i) => {
           if (!wrong.has(i)) {
             return (
@@ -54,7 +57,9 @@ export function DiffView({ reference, score, selfGraded = false }: Props) {
               <span class="word-heard" aria-hidden="true">
                 {hint}
               </span>
-              <span class="visually-hidden">{spoken}</span>
+              <span class="visually-hidden" lang="ko">
+                {spoken}
+              </span>
             </li>
           );
         })}

@@ -1,5 +1,5 @@
-import { useSignal } from '@preact/signals';
-import { useEffect, useMemo } from 'preact/hooks';
+import { untracked, useSignal } from '@preact/signals';
+import { useEffect, useMemo, useRef } from 'preact/hooks';
 import type { Rate } from '../../core/settings';
 import { createPractice, type Practice as PracticeModel } from '../../state/practice';
 import type { PracticeSentence } from '../../state/store';
@@ -10,26 +10,40 @@ import { useApp } from '../context';
 import { accuracyLevel, CATEGORY_LABEL, formatDue, LEVEL_MESSAGE } from '../format';
 import { navigate, practiceRequest } from '../router';
 
-const RATE_OPTIONS: { value: Rate; label: string }[] = [
-  { value: 0.7, label: '0.7×' },
-  { value: 1, label: '1.0×' },
+const RATE_OPTIONS: { value: Rate; label: string; ariaLabel: string }[] = [
+  { value: 0.7, label: '0.7×', ariaLabel: '0.7배속' },
+  { value: 1, label: '1.0×', ariaLabel: '1배속' },
 ];
 
 export function Practice() {
   const { store, services } = useApp();
   const request = practiceRequest.value;
 
-  // The queue is fixed when the session starts so grading does not reshuffle it.
-  const practice = useMemo(() => {
-    let queue: PracticeSentence[] = [];
-    if (request?.kind === 'today') queue = store.queueFor(request.category);
-    if (request?.kind === 'single') {
-      queue = store.sentences.value.filter((s) => s.id === request.sentenceId);
-    }
-    return createPractice(store, services, queue);
-  }, [request]);
+  // The queue is fixed when the session starts; untracked() keeps grading from re-rendering here.
+  const practice = useMemo(
+    () =>
+      untracked(() => {
+        let queue: PracticeSentence[] = [];
+        if (request?.kind === 'today') queue = store.queueFor(request.category);
+        if (request?.kind === 'single') {
+          queue = store.sentences.value.filter((s) => s.id === request.sentenceId);
+        }
+        return createPractice(store, services, queue);
+      }),
+    [request, store, services],
+  );
 
-  useEffect(() => () => practice.dispose(), [practice]);
+  useEffect(() => {
+    // Never keep listening or recording while the app is in the background.
+    const onVisibility = () => {
+      if (document.visibilityState === 'hidden') practice.interrupt();
+    };
+    document.addEventListener('visibilitychange', onVisibility);
+    return () => {
+      document.removeEventListener('visibilitychange', onVisibility);
+      practice.dispose();
+    };
+  }, [practice]);
 
   if (!request) {
     return (
@@ -47,11 +61,27 @@ export function Practice() {
   return <PracticeView practice={practice} />;
 }
 
+function useFocusOnChange(deps: unknown[]) {
+  const ref = useRef<HTMLHeadingElement>(null);
+  const first = useRef(true);
+  useEffect(() => {
+    // The first render is handled by App's route focus.
+    if (first.current) {
+      first.current = false;
+      return;
+    }
+    ref.current?.focus();
+  }, deps);
+  return ref;
+}
+
 function SessionDone({ practice }: { practice: PracticeModel }) {
   const { store } = useApp();
+  const heading = useRef<HTMLHeadingElement>(null);
+  useEffect(() => heading.current?.focus(), []);
   return (
     <div class="stack">
-      <h1 tabIndex={-1}>
+      <h1 tabIndex={-1} ref={heading}>
         <span aria-hidden="true">🎉 </span>세션 완료
       </h1>
       <p>
@@ -72,6 +102,18 @@ function SessionDone({ practice }: { practice: PracticeModel }) {
   );
 }
 
+/** Isolated so partial transcripts (several per second) only re-render this line. */
+function Interim({ practice }: { practice: PracticeModel }) {
+  const text = practice.interim.value;
+  return text ? (
+    <p class="interim" lang="en">
+      {text}
+    </p>
+  ) : (
+    <p class="interim">듣는 중… 문장을 말해 주세요.</p>
+  );
+}
+
 function PracticeView({ practice }: { practice: PracticeModel }) {
   const { store } = useApp();
   const showKo = useSignal(store.settings.value.showKo);
@@ -84,6 +126,7 @@ function PracticeView({ practice }: { practice: PracticeModel }) {
   const position = practice.index.value + 1;
   const busy = phase === 'listening' || phase === 'recording';
   const selfGraded = result?.transcript === null;
+  const heading = useFocusOnChange([practice.index.value, isSegment ? target.segment.text : '']);
 
   return (
     <div>
@@ -94,15 +137,16 @@ function PracticeView({ practice }: { practice: PracticeModel }) {
         <progress
           max={total}
           value={position - 1}
-          aria-label={`진행률 ${total}문장 중 ${position}번째`}
+          aria-label="진행률"
+          aria-valuetext={`${total}문장 중 ${position}번째`}
         />
         <span class="small muted" aria-hidden="true">
           {position} / {total}
         </span>
       </div>
 
-      <h1 tabIndex={-1} class="visually-hidden">
-        문장 연습 {position} / {total}
+      <h1 tabIndex={-1} class="visually-hidden" ref={heading}>
+        {isSegment ? '구간 연습' : `문장 연습 ${position} / ${total}`}
       </h1>
 
       <section class="card" aria-label="연습 문장">
@@ -126,7 +170,11 @@ function PracticeView({ practice }: { practice: PracticeModel }) {
           </p>
         )}
 
-        {isSegment && <p class="small muted">전체 문장: {sentence.text}</p>}
+        {isSegment && (
+          <p class="small muted">
+            전체 문장: <span lang="en">{sentence.text}</span>
+          </p>
+        )}
 
         {sentence.ko && !isSegment && (
           <div>
@@ -149,22 +197,17 @@ function PracticeView({ practice }: { practice: PracticeModel }) {
         <div aria-live="assertive">
           {practice.error.value && <p class="banner banner-warn">{practice.error.value}</p>}
         </div>
-        {phase === 'listening' && (
-          <p class="interim" lang="en">
-            {practice.interim.value || '듣는 중… 문장을 말해 주세요.'}
-          </p>
+        {phase === 'listening' && <Interim practice={practice} />}
+        {phase === 'recording' && (
+          <p class="interim">녹음 중… 말을 마치면 멈추기 버튼을 누르세요.</p>
         )}
-        {phase === 'recording' && <p class="interim">녹음 중… 말을 마치면 ⏹을 누르세요.</p>}
         {result && <ResultPanel practice={practice} />}
       </div>
+      {/* Only results are announced: speaking over an open microphone would pollute recognition. */}
       <p role="status" class="visually-hidden">
-        {phase === 'listening'
-          ? '듣는 중'
-          : phase === 'recording'
-            ? '녹음 중'
-            : result
-              ? `정확도 ${result.score.accuracy}퍼센트, 틀린 단어 ${result.score.wrongDisplayIndices.length}개`
-              : ''}
+        {result && !busy
+          ? `정확도 ${result.score.accuracy}퍼센트, 틀린 단어 ${result.score.wrongDisplayIndices.length}개`
+          : ''}
       </p>
 
       <div class="controls">
@@ -190,7 +233,7 @@ function PracticeView({ practice }: { practice: PracticeModel }) {
           <button
             type="button"
             class="btn btn-primary btn-mic"
-            onClick={() => void practice.submitSelfGrade()}
+            onClick={() => practice.submitSelfGrade()}
           >
             <span aria-hidden="true">✔</span> 채점 완료
           </button>
@@ -256,12 +299,13 @@ function SelfGrade({ practice }: { practice: PracticeModel }) {
       <p class="small muted" id="self-grade-help">
         원문과 비교해서 <strong>틀리거나 빠뜨린 단어</strong>를 탭하세요.
       </p>
-      <div class="words" role="group" aria-labelledby="self-grade-help" lang="en">
+      <div class="words" role="group" aria-labelledby="self-grade-help">
         {words.map((w, i) => (
           <button
             key={i}
             type="button"
             class="word-toggle"
+            lang="en"
             aria-pressed={practice.marks.value.has(i)}
             onClick={() => practice.toggleMark(i)}
           >
@@ -276,6 +320,12 @@ function SelfGrade({ practice }: { practice: PracticeModel }) {
 function ResultPanel({ practice }: { practice: PracticeModel }) {
   const { store } = useApp();
   const result = practice.result.value;
+  const panel = useRef<HTMLElement>(null);
+  // Bring the new score above the sticky controls (scroll-padding keeps it clear of them).
+  useEffect(() => {
+    const reduce = window.matchMedia?.('(prefers-reduced-motion: reduce)').matches;
+    panel.current?.scrollIntoView?.({ block: 'nearest', behavior: reduce ? 'auto' : 'smooth' });
+  }, [result]);
   if (!result) return null;
   const { score } = result;
   const level = accuracyLevel(score.accuracy);
@@ -283,7 +333,7 @@ function ResultPanel({ practice }: { practice: PracticeModel }) {
   const isSegment = practice.target.value.kind === 'segment';
 
   return (
-    <section class="card stack" aria-label="채점 결과">
+    <section class="card stack" aria-label="채점 결과" ref={panel}>
       <div class="score" data-level={level}>
         <span class="score-value">{score.accuracy}%</span>
         <span>
@@ -295,7 +345,7 @@ function ResultPanel({ practice }: { practice: PracticeModel }) {
       {result.transcript !== null && (
         <p class="small">
           <span class="muted">들린 문장: </span>
-          <span lang="en">{result.transcript || '(없음)'}</span>
+          {result.transcript ? <span lang="en">{result.transcript}</span> : '(없음)'}
         </p>
       )}
 
@@ -312,7 +362,7 @@ function ResultPanel({ practice }: { practice: PracticeModel }) {
           <h2 class="small" style={{ margin: '0 0 var(--space-2)' }}>
             틀린 구간만 다시 연습
           </h2>
-          <ul class="list">
+          <ul class="list" role="list">
             {score.segments.map((seg) => (
               <li key={`${seg.start}-${seg.end}`}>
                 <button

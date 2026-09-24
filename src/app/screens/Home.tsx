@@ -34,7 +34,10 @@ export function Home() {
 
       <section class="card stack" aria-labelledby="queue-title">
         <h2 id="queue-title">
-          학습할 문장 <span aria-hidden="true">·</span> {queueSize}개
+          학습할 문장 <span aria-hidden="true">·</span>{' '}
+          <span aria-live="polite" aria-atomic="true">
+            {queueSize}개
+          </span>
         </h2>
         <Segmented
           label="카테고리"

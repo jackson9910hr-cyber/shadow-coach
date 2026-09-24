@@ -5,8 +5,13 @@
 }
 
 html {
+  /* Follow iOS Dynamic Type: rem units scale with the user's text size setting. */
+  font: -apple-system-body;
   -webkit-text-size-adjust: 100%;
   text-size-adjust: 100%;
+  /* Keep focused elements clear of the sticky header and practice controls (WCAG 2.4.11). */
+  scroll-padding-top: 72px;
+  scroll-padding-bottom: 260px;
 }
 
 body {
@@ -16,6 +21,7 @@ body {
   font-family: var(--font);
   font-size: var(--text-md);
   line-height: 1.5;
+  font-weight: 400;
   -webkit-tap-highlight-color: transparent;
 }
 
@@ -59,6 +65,7 @@ select {
 
 /* ---------- Layout ---------- */
 .app {
+  min-height: 100vh;
   min-height: 100dvh;
   display: flex;
   flex-direction: column;
@@ -78,6 +85,7 @@ select {
   max-width: 640px;
   margin: 0 auto;
   display: flex;
+  flex-wrap: wrap;
   align-items: center;
   justify-content: space-between;
   gap: var(--space-2);
@@ -91,6 +99,7 @@ select {
 
 .nav {
   display: flex;
+  flex-wrap: wrap;
   gap: var(--space-1);
 }
 .nav a {
@@ -229,14 +238,30 @@ h2 {
   border-radius: 999px;
 }
 .btn-mic[data-active='true'] {
+  position: relative;
   background: var(--err);
   border-color: var(--err);
   color: var(--accent-contrast);
-  animation: pulse 1.4s ease-in-out infinite;
+}
+/* Compositor-only pulse (transform/opacity) so it never repaints during recognition. */
+.btn-mic[data-active='true']::after {
+  content: '';
+  position: absolute;
+  inset: -6px;
+  border-radius: inherit;
+  border: 4px solid var(--err);
+  opacity: 0;
+  animation: pulse 1.4s ease-out infinite;
+  pointer-events: none;
 }
 @keyframes pulse {
-  50% {
-    box-shadow: 0 0 0 8px var(--err-bg);
+  0% {
+    transform: scale(0.96);
+    opacity: 0.6;
+  }
+  100% {
+    transform: scale(1.06);
+    opacity: 0;
   }
 }
 .btn-ghost {
@@ -254,7 +279,7 @@ h2 {
   border-radius: var(--radius-sm);
 }
 .segmented button {
-  min-height: 40px;
+  min-height: 44px;
   min-width: 44px;
   padding: 0 var(--space-3);
   border: 0;
@@ -265,10 +290,8 @@ h2 {
   cursor: pointer;
 }
 .segmented button[aria-pressed='true'] {
-  background: var(--surface);
-  color: var(--text);
-  box-shadow: var(--shadow);
-  outline: 1px solid var(--border);
+  background: var(--accent);
+  color: var(--accent-contrast);
 }
 
 /* ---------- Stats ---------- */
@@ -377,6 +400,7 @@ h2 {
 }
 .word-toggle {
   min-height: 44px;
+  min-width: 44px;
   padding: 0 var(--space-2);
   border-radius: 8px;
   border: 1px dashed var(--border);
@@ -418,7 +442,9 @@ h2 {
 .controls {
   position: sticky;
   bottom: 0;
-  background: linear-gradient(to top, var(--bg) 80%, transparent);
+  background: var(--bg);
+  border-top: 1px solid var(--border);
+  margin-top: var(--space-4);
   padding: var(--space-3) 0 calc(var(--space-3) + env(safe-area-inset-bottom));
   display: grid;
   gap: var(--space-2);
@@ -511,6 +537,23 @@ select {
 
 audio {
   width: 100%;
+}
+
+.summary {
+  display: flex;
+  align-items: center;
+  min-height: 44px;
+  cursor: pointer;
+}
+
+/* Short screens or large text: don't pin the controls over the content. */
+@media (max-height: 640px) {
+  .controls {
+    position: static;
+  }
+  html {
+    scroll-padding-bottom: 0;
+  }
 }
 
 @media (prefers-reduced-motion: reduce) {

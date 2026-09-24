@@ -45,7 +45,8 @@ test('practice loop scores speech, persists progress across reloads', async ({ p
   await expect(page.getByText('78%')).toBeVisible();
   await expect(page.getByText('다음 복습: 내일')).toBeVisible();
   await page.getByRole('button', { name: /the updated delivery schedule by Friday/ }).click();
-  await expect(page.getByText('구간 연습')).toBeVisible();
+  await expect(page.locator('.badge', { hasText: '구간 연습' })).toBeVisible();
+  await expect(page.getByRole('heading', { name: '구간 연습' })).toBeFocused();
 
   // Fresh page load: progress must come back from IndexedDB.
   await page.goto('./#/');

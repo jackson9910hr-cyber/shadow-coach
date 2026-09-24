@@ -41,6 +41,7 @@ export function InstallHint() {
         class="btn btn-ghost small"
         onClick={() => {
           hidden.value = true;
+          document.getElementById('main')?.focus();
           try {
             localStorage.setItem(KEY, '1');
           } catch {
