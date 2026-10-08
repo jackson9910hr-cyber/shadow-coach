@@ -20,7 +20,7 @@
     "icons": "node scripts/generate-icons.mjs"
   },
   "dependencies": {
-    "@preact/signals": "^2.11.2",
+    "@preact/signals": "^2.11.3",
     "idb": "^8.0.3",
     "preact": "^10.29.8",
     "workbox-window": "^7.4.1"
