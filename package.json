@@ -21,7 +21,7 @@
   },
   "dependencies": {
     "@preact/signals": "^2.11.2",
-    "idb": "^8.0.3",
+    "idb": "^8.0.4",
     "preact": "^10.29.8",
     "workbox-window": "^7.4.1"
   },
